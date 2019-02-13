@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/cache"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+    <!--在配置中会有一些常用的命名空间，一般来说beans，aop，context，mvc都是比较常用的-->
+
+    <!--扫描有注解的包-->
+    <context:component-scan base-package="jyx.maven.controller"/>
+
+    <!--视图解析器(InternalResourceViewResolver)-->
+    <!--功能：在返回了一个结果之后，视图解析器会为其添加前缀和后缀-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/view/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!--
+        1.这里的id不能改
+        2.SpringMVC会根据加载的view中有没jstl来判断选择使用哪个解析器
+    -->
+    <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+        <property name="basename" value="i18n"></property>
+    </bean>
+
+    <!--当这个设置被开启时control中的@RequestMapping()就没用了-->
+    <mvc:view-controller path="springmvc/testViewController" view-name="success"></mvc:view-controller>
+
+    <!--它可以使配置和注释同时生效，比如将上面的@RequestMapping()和view-controller同时生效
+        这个注解是个非常基础的注解，很多功能都需要它来实现
+    -->
+    <mvc:annotation-driven></mvc:annotation-driven>
+
+    <!--可以让我们完成在路径上实现静态资源的访问
+        当我们访问一个请求的时候没有对应的@RequestMapping时，将请求交给默认的servlet去处理，相当于直接访问
+        完整的写法是要写两个配置的，但是另外一个已经写过了，就是<mvc:annotation-driven></mvc:annotation-driven>
+        如果另外一个没有写，只写了下面的这个，则我们只能访问静态资源的路径，简单的理解为 @RequestMapping没用了
+    -->
+    <mvc:default-servlet-handler></mvc:default-servlet-handler>
+
+    <!--1.将自定义的转换器放入SpringIOC中-->
+    <bean id="myConverter" class="jyx.maven.converter.MyConverter"></bean>
+    <!--&lt;!&ndash;2.将对应的转换器放入SpringMVC提供的容器中&ndash;&gt;-->
+    <!--<bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">-->
+    <!--<property name="converters">-->
+    <!--<set>-->
+    <!--<ref bean="myConverter"/>-->
+    <!--</set>-->
+    <!--</property>-->
+    <!--</bean>-->
+    <!--&lt;!&ndash;3.将conversionService注册到annotation-driven中&ndash;&gt;-->
+    <!--<mvc:annotation-driven conversion-service="conversionService"></mvc:annotation-driven>-->
+
+    <!--配置数据格式化注解，所依赖的bean
+        这个bean可以同时实现 格式转换 和 数据格式化 可以将两个合并成一个
+    -->
+    <bean id="conversionServiceFactoryBean"
+          class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <property name="converters">
+            <set>
+                <ref bean="myConverter"/>
+            </set>
+        </property>
+    </bean>
+    <!--2.将conversionServiceFactoryBean注册到annotation-driven中-->
+    <mvc:annotation-driven conversion-service="conversionServiceFactoryBean"/>
+
+
+    <!--<mvc:annotation-driven></mvc:annotation-driven>这段配置SpringMVC会自动加载一个org.springframework.validation.beanvalidation.LocalValidatorFactoryBean类，启用数据校验相关的注释-->
+
+    <!--实现文件上传需要写下面这个配置，且id不能变-->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="UTF-8"/>
+        <!-- 设置单个文件上传的最大文件大小，单位是B，其中-1表示上传的文件最大值不限-->
+        <property name="maxUploadSize" value="-1"/>
+    </bean>
+
+    <!--将写好的拦截器配置到配置文件中，默认为拦截所有请求-->
+    <mvc:interceptors>
+        <!--第一个拦截器-->
+        <mvc:interceptor>
+            <!--指定拦截的路径-->
+            <mvc:mapping path="/**"/>
+            <!--指定不拦截的路径-->
+            <mvc:exclude-mapping path="/springmvc/testRedirect"/>
+            <!--注意：二者取交集-->
+            <bean class="jyx.maven.interceptor.MyInterceptor"/>
+        </mvc:interceptor>
+        <!--第二个拦截器-->
+        <mvc:interceptor>
+            <!--指定拦截的路径-->
+            <mvc:mapping path="/**"/>
+            <!--指定不拦截的路径-->
+            <mvc:exclude-mapping path="/springmvc/testRedirect"/>
+            <!--注意：二者取交集-->
+            <bean class="jyx.maven.interceptor.MyInterceptor2"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+</beans>
