@@ -328,7 +328,7 @@ public class SpringMvcController {
         return students;//实际上返回的是一个Json数组
     }
 
-    //测试 前端->后端->前端
+    //测试 前端->后端->前端                     无用，不用在意
     @RequestMapping(value = "/testJson2")
     public String testJson2(JsonStudent student, BindingResult result) {
 
